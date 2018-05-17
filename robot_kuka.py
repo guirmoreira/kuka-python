@@ -8,7 +8,7 @@ import time
 import math
 from multiprocessing import Queue
 from threading import Thread, Event
-from models import DigitalOutput
+from models import DigitalOutput, Axes, Move
 from xml_modifiers import *
 from collections import deque
 from itertools import islice
@@ -127,29 +127,26 @@ class RobotKuka:
             if self.move_queue.empty():
                 if ~self.move_event.is_set():
                     self.move_event.set()
-                position = Coordinates()
+                move = Move(coordinates=Coordinates(), axes=Axes())
             else:
                 if self.move_event.is_set():
                     self.move_event.clear()
-                position = self.move_queue.get()
+                move = self.move_queue.get()
                 if data.delay > 0:
-                    self.move_queue.put(position)
+                    self.move_queue.put(move)
 
             if self.impedance_control_x is not None and self.impedance_control_y is not None and self.impedance_control_z is not None:
-                position.x += self.impedance_control_x.correction(data.ftc.x)
-                position.y += self.impedance_control_y.correction(data.ftc.y)
-                position.z += self.impedance_control_z.correction(-(-30-data.ftc.z))
+                move.x += self.impedance_control_x.correction(data.ftc.x)
+                move.y += self.impedance_control_y.correction(data.ftc.y)
+                move.z += self.impedance_control_z.correction(-(-30-data.ftc.z))
 
-                '''
-                print('Fx: %.4f -> Cx: %.6f | Fy: %.4f -> Cy: %.6f | Fz: %.4f -> Cz: %.6f | ' %
-                      (data.ftc.x, self.impedance_control_x.correction(data.ftc.x),
-                       data.ftc.y, self.impedance_control_y.correction(data.ftc.y),
-                       data.ftc.z, self.impedance_control_z.correction(data.ftc.z)))
-                       '''
-
-            xml_receive = generate_receive_xml(position, self.dig_out, ipoc)
+            xml_receive = generate_receive_xml(move, self.dig_out, ipoc)
             sock.sendto(xml_receive, address)
             # print("---Delay: %d --- Move: %s ---" % (data.delay, str(self.move_event.is_set()), ))
+
+            if data.delay > 20:
+                print('Danger! Sequential lost data packages count ' + str(data.delay))
+
 
     def wait_robot(self):
         self.wait_robot_event.wait()
@@ -157,7 +154,7 @@ class RobotKuka:
     # ==================================================================================================================
     # Functions related with robots movement ---------------------------------------------------------------------------
 
-    def move(self, x=0, y=0, z=0, a=0, b=0, c=0, li_speed=200, an_speed=6):  # li_speed in mm/s & an_speed in deg/s
+    def move(self, x=0, y=0, z=0, a=0, b=0, c=0, li_speed=100, an_speed=6):  # li_speed in mm/s & an_speed in deg/s
 
         def split_position(position, li_s, an_s):  # returns positions deque
             n_li = math.ceil(math.sqrt(math.pow(position.x, 2) + math.pow(position.y, 2) + math.pow(position.z, 2))
@@ -172,16 +169,38 @@ class RobotKuka:
         split_position, n = split_position(Coordinates(x, y, z, a, b, c), li_speed, an_speed) # config for normal home
 
         def f(q):  # auxiliary function required for the target of the process
-            positions = [split_position]*n
-            for position in positions:
-                q.put(position)
+            moves = [Move(coordinates=split_position, axes=Axes())]*n
+            for move in moves:
+                q.put(move)
+
+        put_queue_thread = Thread(target=f, args=(self.move_queue,))  # process to insert into the queue
+        put_queue_thread.start()  # starts the process
+        put_queue_thread.join()  # hold the parent process until the method is finished
+
+
+    # This function rotates each robot axis
+    def rotate_axes(self, exec_time, axes = Axes()):  # exec_time in seconds
+
+        def split_rotation(axes, exec_time):  # returns positions deque
+            n_p = math.ceil(exec_time/CYCLE_TIME)
+            # print(n_p)
+            splitted_rotation = Axes(a1=axes.a1 / n_p, a2=axes.a2 / n_p, a3=axes.a3 / n_p, 
+                a4=axes.a4 / n_p, a5=axes.a5 / n_p, a6=axes.a6 / n_p)
+            return [splitted_rotation, n_p]
+
+        split_rotation, n = split_rotation(axes, exec_time) # config for normal home
+
+        def f(q):  # auxiliary function required for the target of the process
+            moves = [Move(coordinates=Coordinates(), axes=split_rotation)]*n
+            for move in moves:
+                q.put(move)
 
         put_queue_thread = Thread(target=f, args=(self.move_queue,))  # process to insert into the queue
         put_queue_thread.start()  # starts the process
         put_queue_thread.join()  # hold the parent process until the method is finished
 
     @wait_move_finished
-    def go_to(self, position, li_speed=200, an_speed=6):
+    def go_to(self, position, li_speed=100, an_speed=6):
         current_position = self.get_current_position()
         print(str(position.x-current_position.x)+'|'+str(position.y-current_position.y)+'|'+str(position.z-current_position.z)+'|'+str(position.a-current_position.a)+'|'+str(position.b-current_position.b)+'|'+str(position.c-current_position.c))
         print(str(current_position.a))
@@ -189,6 +208,7 @@ class RobotKuka:
         print(str(current_position.c))
         self.move(x=-(position.x-current_position.x), y=-(position.y-current_position.y), z=-(position.z-current_position.z),
                   a=0, b=0, c=0, li_speed=li_speed, an_speed=an_speed)  # TODO angles movement
+
 
     # This function is to provide a piece of time in which the robot is at rest, just like time.sleep() in Python.
     # time.sleep() is not safe to use because it does not wait until a robot motion is finalized, since the motion

@@ -2,7 +2,9 @@ import xml.etree.cElementTree as Xml
 from models import Coordinates, Axes, Data
 
 
-def generate_receive_xml(pos, dig, ipoc):
+def generate_receive_xml(move, dig, ipoc):
+    pos = move.coordinates
+    axes = move.axes
     xml = Xml.parse('receive.xml')
     root = xml.getroot()
     root[1].set('X', '%.4f' % round(pos.x, 4))
@@ -11,6 +13,13 @@ def generate_receive_xml(pos, dig, ipoc):
     root[1].set('A', '%.4f' % round(pos.a, 4))
     root[1].set('B', '%.4f' % round(pos.b, 4))
     root[1].set('C', '%.4f' % round(pos.c, 4))
+    # axes
+    root[2].set('A1', '%.4f' % round(axes.a1, 4))
+    root[2].set('A2', '%.4f' % round(axes.a2, 4))
+    root[2].set('A3', '%.4f' % round(axes.a3, 4))
+    root[2].set('A4', '%.4f' % round(axes.a4, 4))
+    root[2].set('A5', '%.4f' % round(axes.a5, 4))
+    root[2].set('A6', '%.4f' % round(axes.a6, 4))
     # todo future implementations for other corrections
     root[5].set('D1', '%d' % dig.o1)
     root[5].set('D2', '%d' % dig.o2)
@@ -18,6 +27,7 @@ def generate_receive_xml(pos, dig, ipoc):
     root[6].text = str(ipoc)
     xml.write('receive_mod.xml')
     xml_bytes = Xml.tostring(root)
+    # print(xml_bytes)
     return xml_bytes
 
 

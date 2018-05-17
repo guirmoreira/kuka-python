@@ -14,6 +14,9 @@ class Coordinates:
         self.b = b
         self.c = c
 
+    def print(self):
+        print('x: '+str(self.x)+'|y: '+str(self.y)+'|z: '+str(self.z)+'|a: '+str(self.a)+'|b: '+str(self.b)+'|c: '+str(self.c))
+
 
 class Axes:
 
@@ -24,6 +27,13 @@ class Axes:
         self.a4 = a4
         self.a5 = a5
         self.a6 = a6
+
+
+class Move:
+
+    def __init__(self, coordinates=Coordinates(), axes=Axes()):
+        self.coordinates = coordinates
+        self.axes = axes
 
 
 class DigitalOutput:
