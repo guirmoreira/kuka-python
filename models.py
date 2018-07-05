@@ -14,7 +14,7 @@ class Coordinates:
         self.b = b
         self.c = c
 
-    def print(self):
+    def plot(self):
         print('x: '+str(self.x)+'|y: '+str(self.y)+'|z: '+str(self.z)+'|a: '+str(self.a)+'|b: '+str(self.b)+'|c: '+str(self.c))
 
 
