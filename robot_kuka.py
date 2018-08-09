@@ -1,8 +1,6 @@
 # Guilherme R. Moreira, 2017
 # -----------------------------------------------------------------------------------------------
 
-# -----------------------------------------------------------------------------------------------
-
 import logging
 import time
 import math
@@ -230,7 +228,7 @@ class RobotKuka:
         self.data_collect_flags[output] = len(self.data_deque) - 1
 
     @wait_move_finished
-    def stop_collect(self, output, file=False):
+    def stop_collect(self, output, file=True):
 
         if file:
             def f(fn):  # auxiliary function required for the target of the process
