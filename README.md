@@ -1,17 +1,17 @@
 # kuka-python
 Python library used to communicate and control Kuka manipulator (tested on KR16 model). Under continuous development.
 
-## Versão: 1.0.0
-
-### Novidades da nova versão
+### Versão: 1.0.0
 
 ## Pré-requisitos
 Python 3.x necessário.
-Biblioteca testada nos seguintes plataformas:
+Biblioteca testada nas seguintes plataformas:
+
 * [Linux] Ubuntu 16.04
 * [Linux] Ubuntu 14.04
 * [Windows] Windows 7
 * [Windows] Windows 10
+
 Se você utilizou a bilbioteca em alguma outra plataforma e rodou tranquilamente ou obteve algum problema, por favor reporte aos desenvolvedores.
 
 ## Instalação da biblioteca
@@ -19,8 +19,8 @@ Faça o download do arquivo .zip do projeto ou clone via Git em diretório local
 O Python 3.x deve estar instalado. Essa biblioteca não possui dependência de nenhuma outra biblioteca, portanto não exige nenhuma instalação adicional.
 
 ## Configurando o computador
-A comunicação entre o computador e o robô Kuka é feita via Ethernet. Portanto, use um cabo de rede para conectar o controlador do Kuka diretamente ao seu pc (de preferência) ou conecte os dois numa mesma rede. O IP da sua máquina nessa rede deve ser modificado manualmente para "192.168.10.15" (padrão) com máscara de rede "255.255.255.0". Esse IP pode ser diferente, desde que seja passado corretamente na função que inicia a comunicação.
-Para testar se a comunicação está funcionando corretamente utilize o comando ping para enviar pacotes de teste tanto para o IP da máquina
+A comunicação entre o computador e o robô Kuka é feita via Ethernet. Portanto, use um cabo de rede para conectar o controlador do Kuka diretamente ao seu pc (de preferência) ou conecte os dois numa mesma rede. O IP da sua máquina nessa rede deve ser modificado manualmente para **192.168.10.15** (padrão) com máscara de rede **255.255.255.0**. Esse IP pode ser diferente, desde que seja passado corretamente na função que inicia a comunicação.
+Para testar se a comunicação está funcionando corretamente utilize o comando **ping** para enviar pacotes de teste tanto para o IP da máquina
 ``` 
 ping 192.168.10.15
 ```
@@ -32,9 +32,18 @@ Se tudo estiver certo os pacotes devem ser enviados e recebidos corretamente.
 
 ## Utilização da biblioteca
 
+Para utilizar a biblioteca em um nova tarefa, basta criar um script do Python .py no diretório principal do projeto (veja o exemplo [sample.py](sample.py)). A base para estabelecer uma comunicação com o robô está no exemplo a seguir:
 
+```
+from robot_kuka import *
+kr16 = RobotKuka()
+kr16.start_communication("192.168.10.15", 6008)
+kr16.wait_robot()
+# your code goes here
+kr16.stop_communication()
 
-
+```
+Este código importa a bilbioteca **robot_kuka** e cria uma instância da classe RobotKuka. Todas as funções utilizadas são métodos dessa classe. 
 
 
 
